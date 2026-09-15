@@ -69,6 +69,57 @@ QWEN4_EXP_GEMM_PLANS: dict[tuple[int, int], dict[int, SkinnyGemmConfig]] = {
         1: SkinnyGemmConfig(1, 64, 4, k_unroll=2),
         2: SkinnyGemmConfig(2, 32, 4, k_unroll=2),
     },
+    # Shared-expert gate, replicated at every TP.
+    (1, 2560): {
+        1: SkinnyGemmConfig(1, 160, 1, k_unroll=4, vector_width=4),
+        2: SkinnyGemmConfig(2, 160, 1, k_unroll=4, vector_width=4),
+        4: SkinnyGemmConfig(4, 160, 1, k_unroll=4, vector_width=4),
+        8: SkinnyGemmConfig(8, 160, 1, k_unroll=2, vector_width=8),
+        16: SkinnyGemmConfig(16, 160, 1, k_unroll=2, vector_width=8),
+    },
+    # GDN fused B/A projection, TP=1.
+    (96, 2560): {
+        1: SkinnyGemmConfig(1, 160, 1, k_unroll=2, vector_width=8),
+        2: SkinnyGemmConfig(2, 160, 1, k_unroll=2, vector_width=8),
+        4: SkinnyGemmConfig(4, 160, 1, k_unroll=4, vector_width=4),
+        8: SkinnyGemmConfig(8, 160, 1, k_unroll=4, vector_width=4),
+        16: SkinnyGemmConfig(16, 160, 1, k_unroll=2, vector_width=8),
+    },
+    # MoE router gate, replicated at every TP.
+    (512, 2560): {
+        1: SkinnyGemmConfig(1, 160, 2, k_unroll=4, vector_width=4),
+        2: SkinnyGemmConfig(2, 160, 1, k_unroll=2, vector_width=8),
+        4: SkinnyGemmConfig(4, 160, 1, k_unroll=4, vector_width=4),
+        8: SkinnyGemmConfig(8, 160, 1, k_unroll=4, vector_width=4),
+        16: SkinnyGemmConfig(16, 160, 1, k_unroll=1, vector_width=8),
+    },
+    # Shared-expert fused gate/up projection, TP=1.
+    (1280, 2560): {
+        1: SkinnyGemmConfig(1, 160, 2, k_unroll=2, vector_width=8),
+        2: SkinnyGemmConfig(2, 160, 2, k_unroll=2, vector_width=8),
+        4: SkinnyGemmConfig(4, 160, 2, k_unroll=4, vector_width=4),
+        8: SkinnyGemmConfig(8, 64, 1, k_unroll=2, vector_width=8),
+    },
+    # Shared-expert down projection, TP=1.
+    (2560, 640): {
+        1: SkinnyGemmConfig(1, 160, 4, k_unroll=2, vector_width=4),
+        2: SkinnyGemmConfig(2, 160, 4, k_unroll=1, vector_width=4),
+    },
+    # GDN and QSA output projections, TP=1.
+    (2560, 6144): {
+        1: SkinnyGemmConfig(1, 128, 2, k_unroll=2, vector_width=8),
+        2: SkinnyGemmConfig(2, 64, 2, k_unroll=4, vector_width=8),
+        4: SkinnyGemmConfig(4, 128, 2, k_unroll=2, vector_width=4),
+    },
+    # QSA fused QKV/gate projection, TP=1.
+    (13312, 2560): {
+        1: SkinnyGemmConfig(1, 160, 8, k_unroll=4, vector_width=4),
+        2: SkinnyGemmConfig(2, 32, 8, k_unroll=2, vector_width=8),
+    },
+    # GDN fused QKVZ projection, TP=1.
+    (16384, 2560): {
+        1: SkinnyGemmConfig(1, 160, 8, k_unroll=4, vector_width=4),
+    },
     # HC merged down/injection projection, replicated in a TP=4 deployment.
     (336, 10240): {
         1: SkinnyGemmConfig(1, 128, 1, static_k=10240),

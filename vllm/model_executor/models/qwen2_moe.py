@@ -41,6 +41,10 @@ from vllm.logger import init_logger
 from vllm.model_executor.layers.activation import SiluAndMul
 from vllm.model_executor.layers.attention import Attention
 from vllm.model_executor.layers.fused_moe import FusedMoEFactory
+from vllm.model_executor.layers.fusion.sigmoid_gate import (
+    can_fuse_sigmoid_gate,
+    sigmoid_gate_scale_,
+)
 from vllm.model_executor.layers.layernorm import RMSNorm
 from vllm.model_executor.layers.linear import (
     MergedColumnParallelLinear,
@@ -115,7 +119,10 @@ class Qwen2MoeMLP(nn.Module):
         out, _ = self.down_proj(out)
 
         if self.expert_gate is not None:
-            out = F.sigmoid(self.expert_gate(x)[0]) * out
+            if can_fuse_sigmoid_gate(x, self.expert_gate, out):
+                out = sigmoid_gate_scale_(x, self.expert_gate.weight, out)
+            else:
+                out = F.sigmoid(self.expert_gate(x)[0]) * out
 
         return out
 
